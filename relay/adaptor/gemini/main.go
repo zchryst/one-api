@@ -413,6 +413,7 @@ func responseGeminiChat2OpenAI(response *ChatResponse) *openai.TextResponse {
 			}
 			if len(toolCalls) > 0 {
 				choice.Message.ToolCalls = toolCalls
+				choice.FinishReason = "tool_calls"
 			}
 			if len(toolCalls) == 0 || textBuilder.Len() > 0 {
 				choice.Message.Content = textBuilder.String()

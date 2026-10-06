@@ -206,3 +206,42 @@ func TestResponseThoughtSeparationAndUsageMetadata(t *testing.T) {
 		t.Errorf("expected ReasoningTokens=350, got %+v", streamResp.Usage.CompletionTokensDetails)
 	}
 }
+
+func TestResponseParallelToolCallsAndFinishReason(t *testing.T) {
+	chatResp := &ChatResponse{
+		Candidates: []ChatCandidate{
+			{
+				Content: ChatContent{
+					Role: "model",
+					Parts: []Part{
+						{
+							FunctionCall: &FunctionCall{
+								FunctionName: "get_weather",
+								Arguments:    map[string]any{"city": "Sydney"},
+							},
+						},
+						{
+							FunctionCall: &FunctionCall{
+								FunctionName: "get_weather",
+								Arguments:    map[string]any{"city": "Melbourne"},
+							},
+						},
+					},
+				},
+				FinishReason: "STOP",
+			},
+		},
+	}
+
+	openAIResp := responseGeminiChat2OpenAI(chatResp)
+	if len(openAIResp.Choices) != 1 {
+		t.Fatalf("expected 1 choice, got %d", len(openAIResp.Choices))
+	}
+	choice := openAIResp.Choices[0]
+	if len(choice.Message.ToolCalls) != 2 {
+		t.Fatalf("expected 2 parallel tool calls, got %d", len(choice.Message.ToolCalls))
+	}
+	if choice.FinishReason != "tool_calls" {
+		t.Errorf("FinishReason = %q, want %q", choice.FinishReason, "tool_calls")
+	}
+}
